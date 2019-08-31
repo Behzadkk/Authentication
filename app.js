@@ -12,7 +12,7 @@ mongoose.connect("mongodb://localhost:27017/auth_demo_app", {
 const app = express();
 const port = process.env.PORT || 3000;
 app.set("view engine", "ejs");
-
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   require("express-session")({
     secret: "this is a real secret sentence",
@@ -22,13 +22,39 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
+// ==============
+// ROUTES
+// ==============
 app.get("/", function(req, res) {
   res.render("home");
 });
 
 app.get("/secret", function(req, res) {
   res.render("secret");
+});
+
+// Auth Routes
+app.get("/register", function(req, res) {
+  res.render("register");
+});
+
+app.post("/register", function(req, res) {
+  User.register(
+    new User({ username: req.body.username }),
+    req.body.password,
+    function(err, user) {
+      if (err) {
+        console.log(err);
+        return res.render("register");
+      }
+      passport.authenticate("local")(req, res, function() {
+        res.redirect("/secret");
+      });
+    }
+  );
 });
 
 app.listen(port, function() {
